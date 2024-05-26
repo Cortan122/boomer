@@ -427,8 +427,8 @@ proc main() =
         let pos = getCursorPosition(display)
         Mouse(curr: pos, prev: pos)
     flashlight = Flashlight(
-      isEnabled: false,
-      radius: 200.0)
+      isEnabled: config.flashlight_enabled,
+      radius: config.flashlight_radius)
 
 
   let dt = 1.0 / rate.float
