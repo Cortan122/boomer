@@ -16,6 +16,8 @@ import strutils
 import math
 import options
 
+proc XcursorLibraryLoadCursor*(para1: PDisplay, para2: cstring): Cursor{.cdecl, dynlib: "libXcursor.so", importc.}
+
 type Shader = tuple[path, content: string]
 
 proc readShader(file: string): Shader =
@@ -342,6 +344,9 @@ proc main() =
 
   discard XSetWMProtocols(display, win,
                           addr wmDeleteMessage, 1)
+
+  var cursor = XcursorLibraryLoadCursor(display, cstring(config.cursor))
+  discard XDefineCursor(display, win, cursor)
 
   var glc = glXCreateContext(display, vi, nil, GL_TRUE.cint)
   discard glXMakeCurrent(display, win, glc)

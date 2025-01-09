@@ -74,6 +74,7 @@ Supported parameters:
 | scale_friction     | How quickly the zoom slows down after scrolling     |
 | flashlight_radius  | The initial flashlight radius                       |
 | flashlight_enabled | Whether or not the flashlight is enabled by default |
+| cursor             | Which x11 cursor to use while zooming around        |
 
 ## Experimental Features Compilation Flags
 

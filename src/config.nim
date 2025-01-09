@@ -7,6 +7,7 @@ type Config* = object
   scale_friction*: float
   flashlight_radius*: float
   flashlight_enabled*: bool
+  cursor*: string
 
 const defaultConfig* = Config(
   min_scale: 0.01,
@@ -15,6 +16,7 @@ const defaultConfig* = Config(
   scale_friction: 4.0,
   flashlight_radius: 200.0,
   flashlight_enabled: false,
+  cursor: "arrow",
 )
 
 proc loadConfig*(filePath: string): Config =
@@ -39,6 +41,8 @@ proc loadConfig*(filePath: string): Config =
       result.flashlight_radius = parseFloat(value)
     of "flashlight_enabled":
       result.flashlight_enabled = parseBool(value)
+    of "cursor":
+      result.cursor = value
     else:
       quit "Unknown config key `$#`" % [key]
 
@@ -51,3 +55,4 @@ proc generateDefaultConfig*(filePath: string) =
   f.write("scale_friction = ", defaultConfig.scale_friction, "\n")
   f.write("flashlight_radius = ", defaultConfig.flashlight_radius, "\n")
   f.write("flashlight_enabled = ", defaultConfig.flashlight_enabled, "\n")
+  f.write("cursor = ", defaultConfig.cursor, "\n")
