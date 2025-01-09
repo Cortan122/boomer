@@ -70,6 +70,7 @@ Supported parameters:
 |--------------------|-----------------------------------------------------|
 | min_scale          | The smallest it can get when zooming out            |
 | scroll_speed       | How quickly you can zoom in/out by scrolling        |
+| pinch_speed        | How quickly you can zoom in/out by pinching         |
 | drag_friction      | How quickly the movement slows down after dragging  |
 | scale_friction     | How quickly the zoom slows down after scrolling     |
 | flashlight_radius  | The initial flashlight radius                       |

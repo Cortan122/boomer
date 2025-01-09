@@ -9,6 +9,8 @@ import x11/xlib,
        x11/xutil,
        x11/keysym,
        x11/xrandr,
+       x11/xi2,
+       x11/xinput2,
        x11/cursorfont
 import opengl, opengl/glx
 import la
@@ -17,6 +19,40 @@ import math
 import options
 
 proc XcursorLibraryLoadCursor*(para1: PDisplay, para2: cstring): Cursor{.cdecl, dynlib: "libXcursor.so", importc.}
+
+const
+  XI_GesturePinchBegin* = 27
+  XI_GesturePinchUpdate* = 28
+  XI_GesturePinchEnd* = 29
+
+type
+  XIGesturePinchEvent* {.final.} = object
+    `type`*: cint
+    serial*: culong
+    send_event*: XBool
+    display*: PDisplay
+    extension*: cint
+    evtype*: cint
+    time*: Time
+    deviceid*: cint
+    sourceid*: cint
+    detail: int
+    root: Window
+    event: Window
+    child: Window
+    root_x: float64
+    root_y: float64
+    event_x: float64
+    event_y: float64
+    delta_x: float64
+    delta_y: float64
+    delta_unaccel_x: float64
+    delta_unaccel_y: float64
+    scale: float64
+    delta_angle: float64
+    flags: int
+    mods: XIModifierState
+    group: XIGroupState
 
 type Shader = tuple[path, content: string]
 
@@ -348,6 +384,28 @@ proc main() =
   var cursor = XcursorLibraryLoadCursor(display, cstring(config.cursor))
   discard XDefineCursor(display, win, cursor)
 
+  var xi2_opcode, xi2_event, xi2_error: cint
+  if XQueryExtension(display, "XInputExtension", addr xi2_opcode, addr xi2_event, addr xi2_error) == 0:
+    quit "No XInputExtension found!!"
+
+  var mask_length: cint = XIMaskLen(32)
+  var mask = alloc0(mask_length)
+  defer:
+    dealloc(mask)
+  XISetMask(mask, XI_TouchBegin)
+  XISetMask(mask, XI_TouchUpdate)
+  XISetMask(mask, XI_TouchEnd)
+
+  XISetMask(mask, XI_GesturePinchBegin)
+  XISetMask(mask, XI_GesturePinchUpdate)
+  XISetMask(mask, XI_GesturePinchEnd)
+
+  var evmask: XIEventMask
+  evmask.deviceid = XIAllDevices
+  evmask.mask_len = mask_length
+  evmask.mask = cast[ptr char](mask)
+  discard XISelectEvents(display, win, addr evmask, 1);
+
   var glc = glXCreateContext(display, vi, nil, GL_TRUE.cint)
   discard glXMakeCurrent(display, win, glc)
 
@@ -436,6 +494,7 @@ proc main() =
       radius: config.flashlight_radius)
 
 
+  var prevPinchSize = 0.0
   let dt = 1.0 / rate.float
   var originWindow: Window
   var revertToReturn: cint
@@ -488,6 +547,25 @@ proc main() =
       of ClientMessage:
         if cast[Atom](xev.xclient.data.l[0]) == wmDeleteMessage:
           quitting = true
+
+      of GenericEvent:
+        if xev.xcookie.extension == xi2_opcode:
+          discard XGetEventData(display, addr xev.xcookie)
+          var pinch_event: ptr XIGesturePinchEvent = cast[ptr XIGesturePinchEvent](xev.xcookie.data)
+          case pinch_event.evtype:
+          of XI_GesturePinchBegin:
+            echo "Pinch Begin"
+            prevPinchSize = pinch_event.scale
+          of XI_GesturePinchUpdate:
+            var delta = pinch_event.scale - prevPinchSize
+            prevPinchSize = pinch_event.scale
+
+            camera.deltaScale += delta * config.pinch_speed
+            camera.scalePivot = mouse.curr
+          of XI_GesturePinchEnd:
+            echo "Pinch End"
+          else:
+            discard
 
       of KeyPress:
         var key = XLookupKeysym(cast[PXKeyEvent](xev.addr), 0)
